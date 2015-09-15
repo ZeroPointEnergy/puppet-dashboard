@@ -95,27 +95,33 @@ UNITS:
       orphaned_tables.each do |model, deletion_where_clause|
         puts "Preparing to delete from #{model.table_name}"
         start_time     = Time.now
-        deletion_count = model.where(deletion_where_clause).to_a.size
-        if deletion_count > 0
-          puts "#{start_time.to_s(:db)}: Deleting #{deletion_count} orphaned records from #{model.table_name}"
-          pbar = ProgressBar.new('Deleting', deletion_count, STDOUT)
+        deletion_count = model.count(:conditions => deletion_where_clause)
 
-          # Deleting a very large group of records in MySQL can be very slow with no feedback
-          # Breaking the deletion up into blocks turns out to be overall faster
-          # and allows for progress feedback
-          DELETION_BATCH_SIZE = 1000
-          while deletion_count > DELETION_BATCH_SIZE
-            ActiveRecord::Base.connection.execute(
-              "delete from #{model.table_name} where #{deletion_where_clause} limit #{DELETION_BATCH_SIZE}"
-            )
-            pbar.inc(DELETION_BATCH_SIZE)
-            deletion_count -= DELETION_BATCH_SIZE
+        puts "#{start_time.to_s(:db)}: Deleting #{deletion_count} orphaned records from #{model.table_name}"
+        pbar = ProgressBar.new('Deleting', deletion_count, STDOUT)
+
+        struct = database_settings
+        adapter = struct.adapter
+
+        # Deleting a very large group of records can be very slow with no feedback
+        # Breaking the deletion up into blocks turns out to be overall faster
+        # and allows for progress feedback
+        DELETION_BATCH_SIZE = 1000
+        while deletion_count > 0
+          case adapter
+            when 'mysql', 'mysql2', 'sqlite3'
+              command_line = "delete from #{model.table_name} where #{deletion_where_clause} limit #{DELETION_BATCH_SIZE}"
+            when 'postgresql'
+              command_line = "delete from #{model.table_name} where #{deletion_where_clause} DESC LIMIT #{DELETION_BATCH_SIZE}"
+            else
+              raise ArgumentError, "Unknown database adapter: #{adapter}"
+            end
           end
-
-          pbar.finish
-          puts
-        else
-          puts 'No records to delete'
+          ActiveRecord::Base.connection.execute(
+            "#{command_line}"
+          )
+          pbar.inc(DELETION_BATCH_SIZE)
+          deletion_count -= DELETION_BATCH_SIZE
         end
       end
     end
