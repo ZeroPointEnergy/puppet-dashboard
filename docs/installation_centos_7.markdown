@@ -7,7 +7,8 @@ Download and unpack the source to a location of your choice:
     curl -L https://github.com/sodabrew/puppet-dashboard/archive/master.tar.gz | tar zx --strip-components=1
 
 Puppet Dashboard needs a newer ruby version than the default system ruby
-that comes with CentOS 7. So we need to use the software collections for this:
+that comes with CentOS 7. So we need to use RVM: (https://tecadmin.net/install-ruby-2-2-on-centos-rhel/), 
+or use the software collections for this:
 
     yum install centos-release-scl
 
@@ -60,6 +61,8 @@ Configure access to the database server
 ## MySQL
 
 TBD
+
+## Don't forget to edit the database.yml (DBname, user, pass), and install bundler
 
 ## Migrate the database and precompile assets
 
