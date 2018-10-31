@@ -84,3 +84,43 @@ Manual startup to test the server
     export RAILS_SERVE_STATIC_FILES=true
     bundle exec rails server --port 80
 
+## Service user and permissions
+
+It is good practice to run the service as a dedicated user
+which can not modify the application files.
+
+    useradd puppet-dashboard
+
+Secure the database config
+
+    chgrp puppet-dashboard config/database.yml
+    chmod 0640 config/database.yml
+
+Make tmp and log directories writable for the user
+
+    chown -R puppet-dashboard:puppet-dashboard tmp log
+
+## Create a systemd service
+
+Copy the service file:
+
+    cp ext/redhat/puppet-dashboard.service /etc/systemd/system/
+
+Generate and set the SECRET_KEY_BASE
+
+    bundle exec rails secret
+    systemctl edit puppet-dashboard.service
+
+The File should look like this
+
+    [Service]
+    Environment="SECRET_KEY_BASE=add-the-generated-secret-here"
+
+Other overwrites to the settings in the service file should be
+added here as well.
+
+Reload the daemon and start the service
+
+    systemctl daemon-reload
+    systemctl start puppet-dashboard
+    systemctl enable puppet-dashboard
