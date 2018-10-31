@@ -3,17 +3,17 @@ Description=Puppet Dashboard
 After=httpd.service syslog.target
 
 [Service]
-# Default values
 Environment="RAILS_ENV=production"
-Environment="DASHBOARD_HOME=/usr/share/puppet-dashboard"
-# Overrides here
-EnvironmentFile=-/etc/sysconfig/puppet-dashboard
-# 
-Type=forking
-Restart=always
-ExecStart=/bin/ruby ${DASHBOARD_HOME}/script/rails server -e ${DASHBOARD_ENVIRONMENT} -p ${DASHBOARD_PORT} -b ${DASHBOARD_IFACE}
-KillSignal=SIGINT
+Environment="DASHBOARD_SCL=rh-ruby25"
+Environment="DASHBOARD_PORT=8080"
+Environment="DASHBOARD_IFACE=0.0.0.0"
+WorkingDirectory=/usr/share/puppet-dashboard
+Type=simple
 User=puppet-dashboard
+Group=puppet-dashboard
+Restart=always
+ExecStart=/usr/bin/scl enable ${DASHBOARD_SCL} -- bundle exec rails server -p ${DASHBOARD_PORT} -b ${DASHBOARD_IFACE}
+KillSignal=SIGINT
 SyslogIdentifier=puppet-dashboard
 NoNewPrivileges=true
 
