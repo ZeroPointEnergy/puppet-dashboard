@@ -60,7 +60,47 @@ Configure access to the database server
 
 ## MySQL
 
-TBD
+Install mariaDB:
+
+     yum -y install mariadb-server mariadb-devel
+ 
+ Create the database yaml file in 'config/database.yml'
+
+    production:
+      database: dashboard_production
+      username: dashboard
+      password: mypassword
+      encoding: utf8
+      adapter: mysql2
+
+
+### MySQL server setup
+    
+   #Configure mysql and create the DB, user, pass.  Has to be dropped later because of errors running db:setup
+   # 2: is the line where you want the new line inserted
+   # i: is the parameter that says sed to insert the line.
+   # max_allowed_packet = 32M: is the text to be added in that position.  Must exist in the [mysqld] section
+
+    sed '2imax_allowed_packet = 32M' /etc/my.cnf
+
+    systemctl enable mariadb; systemctl start mariadb
+    
+    mysql <<EOF
+    CREATE DATABASE dashboard CHARACTER SET utf8;
+    CREATE USER 'dashboard'@'localhost' IDENTIFIED BY 'mypassword';
+    GRANT ALL PRIVILEGES ON dashboard.* TO 'dashboard'@'localhost';
+    exit
+    EOF
+
+    gem install bundler
+    bundle install --deployment
+    export SECRET_KEY_BASE=$(bundle exec rails secret)
+
+### Drop and setup the DB since db:setup doesn't work
+    bundle exec rake db:drop RAILS_ENV=production
+    bundle exec rake db:create RAILS_ENV=production
+    bundle exec rake db:migrate RAILS_ENV=production
+
 
 ## Don't forget to edit the database.yml (DBname, user, pass), and install bundler
 
